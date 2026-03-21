@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wellness">
+<title>Wellness Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F2ED;--card:#fff;--text:#1A1A18;--muted:#7A7870;--border:#E5E1DA;
+  --teal:#1D9E75;--teal-l:#E1F5EE;--coral:#D85A30;--coral-l:#FAECE7;
+  --amber:#BA7517;--amber-l:#FAEEDA;--blue:#185FA5;--blue-l:#E6F1FB;
+  --purple:#534AB7;--purple-l:#EEEDFE;--pink:#D4537E;
+  --safe-top:env(safe-area-inset-top,44px);--safe-bottom:env(safe-area-inset-bottom,20px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+
+/* SETUP SCREEN */
+#setup-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center}
+.setup-title{font-family:'DM Serif Display',serif;font-size:32px;margin-bottom:8px}
+.setup-sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:32px;font-weight:300;max-width:300px}
+.setup-label{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px;text-align:left;width:100%;max-width:320px}
+.setup-input{width:100%;max-width:320px;padding:14px 16px;border:1px solid var(--border);border-radius:14px;font-family:'DM Sans',sans-serif;font-size:16px;background:var(--card);color:var(--text);margin-bottom:16px;outline:none}
+.setup-btn{width:100%;max-width:320px;padding:16px;background:var(--teal);color:white;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:500;cursor:pointer}
+.setup-btn:active{opacity:.85}
+.setup-note{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.5;max-width:300px}
+
+/* MAIN APP */
+#main-app{display:none}
+.header{position:sticky;top:0;z-index:50;background:rgba(245,242,237,0.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:calc(var(--safe-top) + 8px) 20px 12px;border-bottom:1px solid var(--border)}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start}
+.h-title{font-family:'DM Serif Display',serif;font-size:27px;line-height:1.1}
+.h-date{font-size:12px;color:var(--muted);margin-top:2px}
+.w-badge{font-size:11px;font-weight:500;padding:4px 12px;border-radius:20px;margin-top:4px;white-space:nowrap}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:var(--safe-bottom);z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 5px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;transition:color .15s}
+.nav-btn.active{color:var(--teal)}
+.nav-icon{font-size:20px;line-height:1}
+.page{display:none;padding:0 14px calc(88px + var(--safe-bottom))}
+.page.active{display:block}
+
+/* WEEK SECTIONS */
+.week-section{margin-bottom:4px}
+.week-section-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:14px 2px 6px;display:flex;align-items:center;gap:8px}
+.week-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.day-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.day-row::-webkit-scrollbar{display:none}
+.day-pill{flex-shrink:0;padding:6px 13px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:white;cursor:pointer;white-space:nowrap;color:var(--muted);transition:all .15s}
+.day-pill.active{background:var(--teal);color:white;border-color:var(--teal);font-weight:500}
+.day-pill.past{opacity:.45}
+.add-week-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;background:var(--teal-l);border:1px dashed var(--teal);border-radius:14px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--teal);cursor:pointer;margin:10px 0 4px}
+.add-week-btn:active{opacity:.75}
+
+.sec-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 6px 2px}
+.card{background:var(--card);border-radius:16px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden}
+.check-item{display:flex;align-items:flex-start;gap:11px;padding:12px 15px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-user-select:none;transition:background .1s}
+.check-item:last-child{border-bottom:none}
+.check-item:active{background:var(--bg)}
+.check-item.done .c-label{opacity:.35;text-decoration:line-through}
+.check-item.done .c-time,.check-item.done .c-note{opacity:.35}
+.cbox{width:23px;height:23px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s;background:white}
+.check-item.done .cbox{background:var(--teal);border-color:var(--teal)}
+.ctick{color:white;font-size:12px;opacity:0;transition:opacity .15s}
+.check-item.done .ctick{opacity:1}
+.c-content{flex:1;min-width:0}
+.c-time{font-size:11px;color:var(--muted);margin-bottom:1px}
+.c-label{font-size:15px;font-weight:500;line-height:1.3}
+.c-note{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45;font-weight:300}
+
+/* PROGRESS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+.s-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.s-val{font-size:30px;font-weight:300;font-family:'DM Serif Display',serif}
+.s-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.bar-row{margin-bottom:11px}
+.bar-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.bar-track{height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--teal);transition:width .5s}
+.wday-strip{display:flex;gap:4px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none}
+.wday-strip::-webkit-scrollbar{display:none}
+.wday-chip{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 6px;background:var(--card);border:1px solid var(--border);border-radius:10px;min-width:36px}
+.wday-chip.done{border-color:var(--teal);background:var(--teal-l)}
+.wdc-l{font-size:9px;color:var(--muted);font-weight:500;text-transform:uppercase}
+.wday-chip.done .wdc-l{color:var(--teal)}
+.wdc-p{font-size:11px;font-weight:500}
+.wday-chip.done .wdc-p{color:var(--teal)}
+textarea{width:100%;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;color:var(--text);background:transparent;resize:none;min-height:90px;line-height:1.6}
+
+/* PORTIONS */
+.ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding-top:14px}
+.ptab{padding:7px 15px;border-radius:20px;border:1px solid var(--border);background:white;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s}
+.ptab.active{background:var(--coral-l);color:var(--coral);border-color:var(--coral);font-weight:500}
+.pseg{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:9px}
+.ps-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.ps-amt{font-size:22px;font-weight:300;font-family:'DM Serif Display',serif}
+.ps-unit{font-size:13px;color:var(--muted);margin-top:1px}
+.ps-note{font-size:12px;color:var(--muted);margin-top:7px;padding-top:7px;border-top:1px solid var(--border);line-height:1.5;font-weight:300}
+.tip-box{background:var(--blue-l);border:1px solid #B5D4F4;border-radius:14px;padding:12px 14px;font-size:13px;color:var(--blue);line-height:1.5;margin-top:4px}
+
+/* GYM */
+.gym-day-tabs{display:flex;gap:6px;padding:14px 0 10px;overflow-x:auto;scrollbar-width:none}
+.gym-day-tabs::-webkit-scrollbar{display:none}
+.gtab{flex-shrink:0;padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:white;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s}
+.gtab.active{background:var(--purple-l);color:var(--purple);border-color:var(--purple);font-weight:500}
+.ex-card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden}
+.ex-header{padding:13px 15px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.ex-num{width:28px;height:28px;border-radius:50%;background:var(--purple-l);color:var(--purple);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ex-name{font-size:15px;font-weight:500;flex:1}
+.ex-muscle{font-size:11px;color:var(--muted)}
+.set-row{display:flex;align-items:center;padding:10px 15px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer;-webkit-user-select:none;transition:background .1s}
+.set-row:last-child{border-bottom:none}
+.set-row:active{background:var(--bg)}
+.set-row.done-set .set-label{opacity:.4;text-decoration:line-through}
+.set-row.done-set .set-detail{opacity:.4}
+.set-cbox{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:white;transition:all .2s}
+.set-row.done-set .set-cbox{background:var(--purple);border-color:var(--purple)}
+.set-tick{color:white;font-size:11px;opacity:0;transition:opacity .15s}
+.set-row.done-set .set-tick{opacity:1}
+.set-label{font-size:14px;font-weight:500;flex:1}
+.set-detail{font-size:12px;color:var(--muted)}
+.set-warmup .set-label{color:var(--amber)}
+.set-warmup.done-set .set-label{color:var(--muted)}
+.gym-note{font-size:12px;color:var(--muted);padding:10px 15px;border-top:1px solid var(--border);line-height:1.5;font-weight:300}
+.reset-btn{width:100%;padding:13px;background:none;border:1px solid var(--border);border-radius:14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;margin-top:4px}
+.reset-btn:active{background:var(--border)}
+.danger-btn{width:100%;padding:13px;background:none;border:1px solid #F09595;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--coral);cursor:pointer;margin-top:8px}
+.danger-btn:active{background:var(--coral-l)}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-title">Welcome 🌿</div>
+  <div class="setup-sub">Choose the date your program starts. All your days will count from this date.</div>
+  <div class="setup-label">Program start date</div>
+  <input type="date" id="start-date-input" class="setup-input">
+  <button class="setup-btn" onclick="confirmStart()">Start my program</button>
+  <div class="setup-note">You can always reset this later from the Progress tab.</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app">
+
+<div class="header">
+  <div class="header-top">
+    <div><div class="h-title" id="hTitle">Today</div><div class="h-date" id="hDate"></div></div>
+    <div class="w-badge" id="hBadge">Week 1</div>
+  </div>
+</div>
+
+<!-- TODAY -->
+<div class="page active" id="page-today">
+  <div id="weekSections"></div>
+  <div id="checklistWrap"></div>
+  <button class="reset-btn" onclick="resetDay()">Reset this day's checklist</button>
+</div>
+
+<!-- PROGRESS -->
+<div class="page" id="page-progress">
+  <div class="sec-label" style="padding-top:14px">All days</div>
+  <div class="wday-strip" id="wdayStrip"></div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="s-label">Days active</div><div class="s-val" id="sDays">0</div><div class="s-sub" id="sDaysSub">of 28 days</div></div>
+    <div class="stat-card"><div class="s-label">Today</div><div class="s-val" id="sToday">0%</div><div class="s-sub" id="sTodaySub">0 items</div></div>
+  </div>
+  <div class="card" style="padding:15px;margin-bottom:10px">
+    <div class="bar-top"><span style="font-weight:500">Overall progress</span><span id="overallPct" style="color:var(--muted)">0%</span></div>
+    <div class="bar-track" style="height:9px;border-radius:5px"><div class="bar-fill" id="overallBar" style="height:100%;border-radius:5px;width:0%"></div></div>
+  </div>
+  <div class="sec-label">By week</div>
+  <div class="card" style="padding:15px;margin-bottom:10px"><div id="weekBars"></div></div>
+  <div class="sec-label">Key habits</div>
+  <div class="card" style="padding:15px;margin-bottom:10px"><div id="habitBars"></div></div>
+  <div class="sec-label">Notes</div>
+  <div class="card" style="padding:13px 15px;margin-bottom:10px"><textarea id="notesArea" placeholder="How are you feeling? Bloating? Energy? Weight? Cycle notes?" oninput="saveNotes()"></textarea></div>
+  <button class="danger-btn" onclick="resetStartDate()">Reset program &amp; start date</button>
+</div>
+
+<!-- PORTIONS -->
+<div class="page" id="page-portions">
+  <div class="ptabs">
+    <div class="ptab active" onclick="showPortion('shake',this)">Shake</div>
+    <div class="ptab" onclick="showPortion('lunch',this)">Lunch</div>
+    <div class="ptab" onclick="showPortion('dinner',this)">Dinner</div>
+    <div class="ptab" onclick="showPortion('snack',this)">Snacks</div>
+  </div>
+  <div id="portionContent"></div>
+</div>
+
+<!-- GYM -->
+<div class="page" id="page-gym">
+  <div class="gym-day-tabs">
+    <div class="gtab active" onclick="showGymDay('mon',this)">Monday</div>
+    <div class="gtab" onclick="showGymDay('wed',this)">Wednesday</div>
+    <div class="gtab" onclick="showGymDay('fri',this)">Friday</div>
+  </div>
+  <div id="gymContent"></div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="goPage('today',this)"><span class="nav-icon">☀️</span>Today</button>
+  <button class="nav-btn" onclick="goPage('progress',this)"><span class="nav-icon">📈</span>Progress</button>
+  <button class="nav-btn" onclick="goPage('portions',this)"><span class="nav-icon">🥗</span>Portions</button>
+  <button class="nav-btn" onclick="goPage('gym',this)"><span class="nav-icon">🏋️</span>Gym</button>
+</nav>
+
+</div>
+
+<script>
+// ── WEEK LABELS ───────────────────────────────────────
+// First 4 weeks fixed, beyond that = maintenance
+function getWeekLabel(wk){
+  if(wk===0) return 'Week 1 — Reset';
+  if(wk===1) return 'Week 2 — Build';
+  if(wk===2) return 'Week 3 — Maintain';
+  if(wk===3) return 'Week 4 — Lock';
+  return 'Week '+(wk+1)+' — Maintenance';
+}
+function getWeekShort(wk){return 'W'+(wk+1);}
+// Cycles through 4 colors, maintenance weeks stay coral
+function getWeekColor(wk){
+  const colors=[
+    {bg:'var(--teal-l)',color:'var(--teal)'},
+    {bg:'var(--blue-l)',color:'var(--blue)'},
+    {bg:'var(--purple-l)',color:'var(--purple)'},
+    {bg:'var(--coral-l)',color:'var(--coral)'},
+  ];
+  return colors[Math.min(wk,3)];
+}
+
+let START=null;
+let totalWeeks=4; // grows as user adds maintenance weeks
+let selDay=0,curPage='today';
+
+// ── START DATE ────────────────────────────────────────
+function loadStart(){
+  const s=localStorage.getItem('wt_start');
+  if(s){START=new Date(s);}
+  const tw=localStorage.getItem('wt_totalWeeks');
+  if(tw){totalWeeks=parseInt(tw);}
+  return !!s;
+}
+
+function confirmStart(){
+  const val=document.getElementById('start-date-input').value;
+  if(!val){alert('Please pick a date.');return;}
+  const d=new Date(val+'T00:00:00');
+  localStorage.setItem('wt_start',d.toISOString());
+  localStorage.setItem('wt_totalWeeks','4');
+  START=d; totalWeeks=4;
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  selDay=Math.max(0,todayOff());
+  updateHeader();buildWeekSections();buildChecklist(selDay);
+  showPortion('shake',document.querySelector('.ptab'));
+  renderGym('mon');
+}
+
+function addMaintenanceWeek(){
+  totalWeeks++;
+  localStorage.setItem('wt_totalWeeks',String(totalWeeks));
+  buildWeekSections();
+  // scroll to new week
+  setTimeout(()=>{
+    const sections=document.querySelectorAll('.week-section');
+    if(sections.length) sections[sections.length-1].scrollIntoView({behavior:'smooth',block:'start'});
+  },150);
+}
+
+function resetStartDate(){
+  if(!confirm('Reset your program? This clears ALL checklist and progress data.')) return;
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('wt_'));
+  keys.forEach(k=>localStorage.removeItem(k));
+  START=null; totalWeeks=4; selDay=0;
+  document.getElementById('main-app').style.display='none';
+  showSetupScreen();
+}
+
+function showSetupScreen(){
+  document.getElementById('setup-screen').style.display='flex';
+  const today=new Date();
+  const dow=today.getDay();
+  const add=dow===1?0:(dow===0?1:8-dow);
+  const target=new Date(today);
+  target.setDate(today.getDate()+add);
+  const yyyy=target.getFullYear();
+  const mm=String(target.getMonth()+1).padStart(2,'0');
+  const dd=String(target.getDate()).padStart(2,'0');
+  document.getElementById('start-date-input').value=`${yyyy}-${mm}-${dd}`;
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function totalDays(){return totalWeeks*7;}
+function todayOff(){
+  if(!START) return 0;
+  const n=new Date();n.setHours(0,0,0,0);
+  const off=Math.round((n-START)/86400000);
+  return Math.max(0,Math.min(totalDays()-1,off));
+}
+function dayType(off){
+  const i=off%7;
+  if(i===0||i===2||i===4) return 'weights';
+  if(i===1||i===3) return 'cardio';
+  return 'rest';
+}
+function weekNum(off){return Math.floor(off/7);}
+
+// ── SCHEDULE ─────────────────────────────────────────
+function makeSchedule(off){
+  const type=dayType(off),wk=weekNum(off),w2=wk===1,isMaint=wk>=2;
+  if(type==='rest') return [
+    {id:'wake',   time:'7:00 am',dot:'#888780',label:'Sleep in / gentle wake',   note:'Rest days are recovery. Let your body repair and muscles grow.'},
+    {id:'shake',  time:'7:30 am',dot:'#1D9E75',label:'Morning shake',             note:'Same formula every day — consistency is the whole game.'},
+    {id:'coffee1',time:'8:00 am',dot:'#BA7517',label:'Coffee — slow morning',    note:'One cup, after food. Enjoy it without rushing.'},
+    {id:'dog',    time:'10:00 am',dot:'#D4537E',label:'Dog park / leisure walk', note:'Light movement keeps digestion moving on rest days.'},
+    {id:'lunch',  time:'12:30 pm',dot:'#1D9E75',label:'Lunch',                   note:isMaint?'This is your lifestyle now. Keep the structure even on weekends.':'Keep it clean. Weekends are when temptations hit — plan ahead.'},
+    {id:'snack',  time:'3:30 pm',dot:'#BA7517',label:'Snack (only if hungry)',   note:'Hard-boiled egg or hummus + cucumber. Skip if not hungry.'},
+    {id:'dinner', time:'6:30 pm',dot:'#1D9E75',label:'Dinner',                   note:'Clean protein + cooked veg. Same structure as weekdays.'},
+    {id:'supps',  time:'7:00 pm',dot:'#D85A30',label:'D3/K2 supplement',         note:'With dinner — fat-soluble, always needs food.'},
+    {id:'close',  time:'8:00 pm',dot:'#888780',label:'Kitchen closed',            note:'Overnight fast begins. Herbal tea is fine.'},
+    {id:'sleep',  time:'9:30 pm',dot:'#888780',label:'Wind down',                 note:'Rest day — no 5 am alarm. But try to keep sleep time consistent.'},
+  ];
+  const base=[
+    {id:'wake',   time:'5:00 am',dot:'#534AB7',label:'Wake up + head to gym',      note:'Drink 12–16 oz water before leaving.'},
+    {id:'cardio', time:'5:15 am',dot:'#534AB7',label:'Treadmill — 60 min',         note:type==='weights'?'Cardio first, conserve a little for machines after.':'Full 60 min. Try intervals or incline today.'},
+  ];
+  if(type==='weights') base.push({id:'weights',time:'6:15 am',dot:'#185FA5',label:'Weight training — 20–25 min',
+    note:isMaint?'This is your routine. Keep pushing — try increasing weight slightly each week.':w2?'Increase weight slightly from last week.':'3 exercises, 3 warm-up + 3 working sets each. See Gym tab.'});
+  base.push(
+    {id:'shake',  time:type==='weights'?'6:45 am':'6:25 am',dot:'#1D9E75',label:'Post-gym shake',   note:'½ banana + ½ cup berries + 1 scoop Orgain + spinach. Within 45 min.'},
+    {id:'coffee1',time:type==='weights'?'6:55 am':'6:35 am',dot:'#BA7517',label:'First coffee',      note:'After your shake — not before. Caffeine on empty stomach aggravates bloating.'}
+  );
+  if(type==='weights') base.push({id:'dog',time:'7:30 am',dot:'#D4537E',label:'Dog park',note:'Bonus steps + mental reset before work. You earned it.'});
+  base.push(
+    {id:'work',   time:type==='weights'?'8:45 am':'7:30 am',dot:'#888780',label:'Work starts',        note:'Shake carries you comfortably to lunch. No snack pressure.'},
+    {id:'snack',  time:'10:00 am',dot:'#185FA5',label:'Mid-morning snack (if hungry)', note:isMaint?'Trust your hunger cues — they are well calibrated by now.':'Nut butter on rice cake, or 7 walnuts. Skip if not hungry.'},
+    {id:'lunch',  time:'12:30 pm',dot:'#1D9E75',label:'Lunch',                          note:isMaint?'Your routine. Keep it satisfying and consistent.':w2?'Whole Detox leftovers. Satisfying portions, not tiny.':'Whole Detox leftovers — cooked veg only this week.'},
+    {id:'coffee2',time:'1:00 pm',dot:'#BA7517',label:'Last coffee of the day',          note:'Coffee cutoff. Herbal or peppermint tea after this.'},
+    {id:'snack2', time:'3:30 pm',dot:'#185FA5',label:'Afternoon snack (optional)',      note:type==='weights'?'Small protein snack helps recovery on weights days.':'Skip if not hungry — a good sign your meals are dialed in.'},
+    {id:'dinner', time:'6:30 pm',dot:'#1D9E75',label:'Dinner',                          note:isMaint?'Keep adding new Whole Detox recipes to stay interested.':w2?'Add variety gradually. Introduce one new food at a time.':'Clean protein + cooked veg + optional squash or lentils.'},
+    {id:'supps',  time:'7:00 pm',dot:'#D85A30',label:'D3/K2 supplement',               note:isMaint?'Daily non-negotiable. Takes 2 seconds.':w2?'Can reintroduce ONE gummy — beet OR fiber, not both.':'Fiber + beet gummies PAUSED. D3/K2 only this week.'},
+    {id:'close',  time:'8:00 pm',dot:'#888780',label:'Kitchen closed',                  note:'11–12 hr overnight fast. One of the biggest bloat reducers in this plan.'},
+    {id:'sleep',  time:'9:00 pm',dot:'#888780',label:'Wind down',                       note:'5 am alarm needs 7–8 hrs. In bed by 9–9:30 pm.'}
+  );
+  return base;
+}
+
+// ── STORAGE ───────────────────────────────────────────
+function loadChecked(off){try{return JSON.parse(localStorage.getItem('wt_d'+off)||'[]')}catch{return[]}}
+function saveChecked(off,arr){localStorage.setItem('wt_d'+off,JSON.stringify(arr))}
+function saveNotes(){localStorage.setItem('wt_notes',document.getElementById('notesArea').value)}
+
+// ── HEADER ────────────────────────────────────────────
+function updateHeader(){
+  const today=new Date();
+  document.getElementById('hTitle').textContent='Today';
+  document.getElementById('hDate').textContent=today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const wk=weekNum(todayOff());
+  const c=getWeekColor(wk);
+  const badge=document.getElementById('hBadge');
+  badge.textContent=getWeekShort(wk)+' · '+(['Reset','Build','Maintain','Lock'][wk]||'Maintenance');
+  badge.style.background=c.bg;badge.style.color=c.color;
+}
+
+// ── WEEK SECTIONS ─────────────────────────────────────
+function buildWeekSections(){
+  const container=document.getElementById('weekSections');
+  container.innerHTML='';
+  const today=todayOff();
+  for(let w=0;w<totalWeeks;w++){
+    const sec=document.createElement('div');sec.className='week-section';
+    const lbl=document.createElement('div');lbl.className='week-section-label';
+    const c=getWeekColor(w);
+    lbl.innerHTML=`<span style="color:${c.color};font-size:11px">${getWeekLabel(w)}</span>`;
+    sec.appendChild(lbl);
+    const row=document.createElement('div');row.className='day-row';
+    for(let d=0;d<7;d++){
+      const off=w*7+d;
+      const t=dayType(off);
+      const icon=t==='weights'?'🏋️':t==='cardio'?'🏃':'😴';
+      const lname=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d];
+      const pill=document.createElement('div');
+      pill.className='day-pill'+(off===selDay?' active':'')+(off<today?' past':'');
+      pill.textContent=icon+' '+lname;
+      pill.onclick=(()=>{const o=off;return()=>selectDay(o);})();
+      row.appendChild(pill);
+    }
+    sec.appendChild(row);
+    container.appendChild(sec);
+  }
+  // Add maintenance week button at bottom
+  const addBtn=document.createElement('button');
+  addBtn.className='add-week-btn';
+  addBtn.innerHTML='+ Add maintenance week';
+  addBtn.onclick=addMaintenanceWeek;
+  container.appendChild(addBtn);
+
+  setTimeout(()=>{
+    const pills=document.querySelectorAll('.day-pill');
+    if(pills[selDay]) pills[selDay].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+  },100);
+}
+
+function selectDay(off){
+  selDay=off;
+  buildWeekSections();
+  buildChecklist(off);
+}
+
+// ── CHECKLIST ─────────────────────────────────────────
+const GROUPS=[
+  {label:'Morning',   ids:['wake','cardio','weights']},
+  {label:'Post-gym',  ids:['shake','coffee1','dog','work']},
+  {label:'Midday',    ids:['snack','lunch','coffee2']},
+  {label:'Afternoon', ids:['snack2','dinner','supps','close','sleep']},
+];
+
+function buildChecklist(off){
+  const items=makeSchedule(off),checked=loadChecked(off);
+  const wrap=document.getElementById('checklistWrap');wrap.innerHTML='';
+  GROUPS.forEach(g=>{
+    const gi=items.filter(it=>g.ids.includes(it.id));
+    if(!gi.length) return;
+    const lbl=document.createElement('div');lbl.className='sec-label';lbl.textContent=g.label;
+    wrap.appendChild(lbl);
+    const card=document.createElement('div');card.className='card';
+    gi.forEach(item=>{
+      const done=checked.includes(item.id);
+      const row=document.createElement('div');
+      row.className='check-item'+(done?' done':'');
+      row.innerHTML=`<div class="cbox"><span class="ctick">✓</span></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:${item.dot};flex-shrink:0;margin-top:8px"></div>
+        <div class="c-content">
+          <div class="c-time">${item.time}</div>
+          <div class="c-label">${item.label}</div>
+          <div class="c-note">${item.note}</div>
+        </div>`;
+      row.onclick=(()=>{const o=off,id=item.id,r=row;return()=>toggle(o,id,r);})();
+      card.appendChild(row);
+    });
+    wrap.appendChild(card);
+  });
+}
+
+function toggle(off,id,row){
+  let c=loadChecked(off);
+  if(c.includes(id)){c=c.filter(x=>x!==id);row.classList.remove('done')}
+  else{c.push(id);row.classList.add('done')}
+  saveChecked(off,c);
+}
+function resetDay(){
+  if(!confirm('Reset checklist for this day?')) return;
+  saveChecked(selDay,[]);buildChecklist(selDay);
+}
+
+// ── PROGRESS ──────────────────────────────────────────
+function buildProgress(){
+  const today=todayOff();
+  const td=totalDays();
+  // strip
+  const strip=document.getElementById('wdayStrip');strip.innerHTML='';
+  for(let i=0;i<td;i++){
+    const lbl=['M','T','W','T','F','S','S'][i%7];
+    const items=makeSchedule(i),ch=loadChecked(i);
+    const pct=items.length?Math.round(ch.length/items.length*100):0;
+    const hasData=ch.length>0;
+    const chip=document.createElement('div');
+    chip.className='wday-chip'+(hasData?' done':'');
+    chip.innerHTML=`<div class="wdc-l">${lbl}</div><div class="wdc-p">${hasData?pct+'%':'—'}</div>`;
+    strip.appendChild(chip);
+  }
+  // stats
+  const ti=makeSchedule(today),tc=loadChecked(today);
+  const tp=ti.length?Math.round(tc.length/ti.length*100):0;
+  document.getElementById('sToday').textContent=tp+'%';
+  document.getElementById('sTodaySub').textContent=tc.length+' of '+ti.length+' items';
+  let da=0;for(let i=0;i<td;i++)if(loadChecked(i).length>0)da++;
+  document.getElementById('sDays').textContent=da;
+  document.getElementById('sDaysSub').textContent='of '+td+' days';
+  let tot=0,ch=0;for(let i=0;i<td;i++){const it=makeSchedule(i);tot+=it.length;ch+=loadChecked(i).length;}
+  const op=tot?Math.round(ch/tot*100):0;
+  document.getElementById('overallPct').textContent=op+'%';
+  document.getElementById('overallBar').style.width=op+'%';
+  // week bars
+  const wb=document.getElementById('weekBars');wb.innerHTML='';
+  for(let w=0;w<totalWeeks;w++){
+    let wt=0,wc=0;
+    for(let d=0;d<7;d++){const off=w*7+d,it=makeSchedule(off);wt+=it.length;wc+=loadChecked(off).length;}
+    const pct=wt?Math.round(wc/wt*100):0;
+    const c=getWeekColor(w);
+    const shortLabel=['Reset','Build','Maintain','Lock'][w]||'Maintenance';
+    wb.innerHTML+=`<div class="bar-row" style="${w>0?'margin-top:11px':''}">
+      <div class="bar-top"><span>${getWeekShort(w)} · ${shortLabel}</span><span style="color:var(--muted)">${pct}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
+    </div>`;
+  }
+  // habits
+  const habits=[
+    {label:'Kitchen closed by 8 pm',id:'close',color:'#1D9E75'},
+    {label:'Post-gym shake',id:'shake',color:'#185FA5'},
+    {label:'D3/K2 taken',id:'supps',color:'#D85A30'},
+    {label:'Coffee after food',id:'coffee1',color:'#BA7517'},
+    {label:'In bed by 9–9:30 pm',id:'sleep',color:'#534AB7'},
+  ];
+  const hb=document.getElementById('habitBars');hb.innerHTML='';
+  habits.forEach((h,hi)=>{
+    let cnt=0,pos=0;
+    for(let i=0;i<td;i++){const items=makeSchedule(i);if(items.find(it=>it.id===h.id)){pos++;if(loadChecked(i).includes(h.id))cnt++;}}
+    const pct=pos?Math.round(cnt/pos*100):0;
+    hb.innerHTML+=`<div class="bar-row" style="${hi>0?'margin-top:11px':''}">
+      <div class="bar-top"><span>${h.label}</span><span style="color:var(--muted)">${cnt}/${pos}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${h.color}"></div></div>
+    </div>`;
+  });
+  document.getElementById('notesArea').value=localStorage.getItem('wt_notes')||'';
+}
+
+// ── PORTIONS ──────────────────────────────────────────
+const PORTIONS={
+  shake:{segs:[
+    {label:'Protein',  amount:'1 scoop',   unit:'Orgain plant protein (~21g)',               note:'Anchor of the shake. Non-negotiable on gym days.',color:'#D85A30'},
+    {label:'Fruit',    amount:'½ cup',     unit:'berries — blueberry, strawberry, raspberry', note:'Lower fructose than mixed fruit. Less bloat, less sugar spike.',color:'#BA7517'},
+    {label:'Banana',   amount:'½',         unit:'small banana',                               note:'Save the other half for tomorrow. Full banana is a lot of fructose first thing.',color:'#BA7517'},
+    {label:'Greens',   amount:'1 handful', unit:'spinach (~½ cup packed)',                    note:'Low FODMAP. Adds iron + magnesium without bloating.',color:'#1D9E75'},
+    {label:'Liquid',   amount:'1 cup',     unit:'water or unsweetened almond milk',           note:'Avoid oat milk if still bloating — it is higher in carbs.',color:'#185FA5'},
+  ],tip:'Drink within 30–45 min of finishing weights. Still your first food on cardio-only mornings.'},
+  lunch:{segs:[
+    {label:'Protein',        amount:'3–4 oz',   unit:'leftovers — palm-sized portion',        note:'Whole Detox leftovers are perfect. You already did the cooking.',color:'#D85A30'},
+    {label:'Cooked veg',     amount:'1½–2 cups',unit:'whatever was in last night\'s dinner',   note:'Your bulk. Generous portions keep you full without calorie overload.',color:'#1D9E75'},
+    {label:'Fat (optional)', amount:'1 tsp',    unit:'olive oil, avocado, or a few nuts',      note:'Only if the meal feels light. Helps absorb fat-soluble vitamins.',color:'#BA7517'},
+    {label:'Carb (optional)',amount:'¼ cup',    unit:'squash, sweet potato, or legumes',       note:'Skip on rest days or if not hungry.',color:'#185FA5'},
+  ],tip:'If the shake carried you well, a smaller lunch is fine. Trust your hunger signals.'},
+  dinner:{segs:[
+    {label:'Protein',     amount:'1 chicken thigh',unit:'bone-in skin-on (~30g protein)',           note:'You are doing this right. One thigh is a perfect portion for your size and goals.',color:'#D85A30'},
+    {label:'Cooked veg',  amount:'2 cups',          unit:'whatever the Whole Detox recipe calls for', note:'Heavy on veg is correct. Fill the biggest portion of your plate here.',color:'#1D9E75'},
+    {label:'Cooking fat', amount:'1–2 tsp',         unit:'olive oil or fat from the recipe only',    note:'Do not add extra. Fat is calorie-dense even in clean recipes.',color:'#BA7517'},
+    {label:'Carb (opt.)', amount:'¼–⅓ cup',        unit:'squash, sweet potato, or lentils only',    note:'Skip grains. If squash is already in the recipe, no extra starch needed.',color:'#185FA5'},
+  ],tip:'Watch for invisible calories: coconut milk, tahini, and olive oil can quietly double a clean meal\'s calories.'},
+  snack:{segs:[
+    {label:'Mid-morning (if needed)',  amount:'1–2 tbsp',unit:'nut butter on 1 rice cake',             note:'Only if genuinely hungry. Skip if the shake is holding you.',color:'#BA7517'},
+    {label:'Walnuts option',           amount:'7 whole', unit:'walnuts (1 oz, ~185 cal)',               note:'Count them out — a handful looks like nothing but adds up fast.',color:'#BA7517'},
+    {label:'Afternoon (weights days)', amount:'1–2',     unit:'hard-boiled eggs or hummus + cucumber',  note:'Small protein snack on weights days helps muscle recovery at 3:30 pm.',color:'#D85A30'},
+    {label:'What to avoid',            amount:'—',       unit:'bars, fruit snacks, loose nut handfuls', note:'Make snacks require preparation — it prevents mindless eating.',color:'#534AB7'},
+  ],tip:'Goal: not needing snacks by week 3. Three satisfying meals should carry you.'},
+};
+function showPortion(key,btn){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const p=PORTIONS[key];
+  document.getElementById('portionContent').innerHTML=
+    p.segs.map(s=>`<div class="pseg"><div class="ps-lbl" style="color:${s.color}">${s.label}</div><div class="ps-amt">${s.amount}</div><div class="ps-unit">${s.unit}</div><div class="ps-note">${s.note}</div></div>`).join('')+
+    `<div class="tip-box">${p.tip}</div>`;
+}
+
+// ── GYM ───────────────────────────────────────────────
+const GYM_DAYS={
+  mon:{label:'Monday — Push',focus:'Quads, chest, shoulders',exercises:[
+    {name:'Leg press machine',    muscle:'Quads / glutes',       note:'Feet shoulder-width, press through heels. Full range of motion.',
+     warmup:['12 reps — very light (about 40% of working weight)','10 reps — slightly heavier (60%)','8 reps — approaching working weight (80%)'],
+     working:['8–12 reps — working weight','8–12 reps — same weight','8–12 reps — same or slightly more if feeling strong']},
+    {name:'Chest press machine',  muscle:'Chest / triceps',      note:'Seat height: handles at mid-chest. Press straight out, controlled return.',
+     warmup:['12 reps — very light','10 reps — building','8 reps — near working weight'],
+     working:['8–12 reps','8–12 reps','8–12 reps — push for the last 2']},
+    {name:'Shoulder press machine',muscle:'Shoulders / upper traps',note:'Sit tall, press straight up. Do not arch your lower back.',
+     warmup:['12 reps — very light','10 reps','8 reps'],
+     working:['8–12 reps','8–12 reps','8–12 reps']},
+  ]},
+  wed:{label:'Wednesday — Pull',focus:'Hamstrings, back, lats',exercises:[
+    {name:'Hamstring curl machine',muscle:'Hamstrings / glutes',  note:'Curl smoothly — do not jerk. Great for lower back support.',
+     warmup:['12 reps — very light','10 reps','8 reps'],
+     working:['8–12 reps','8–12 reps','8–12 reps']},
+    {name:'Seated cable row',      muscle:'Mid back / biceps',    note:'Sit tall, pull to lower chest. Squeeze shoulder blades together at the end.',
+     warmup:['12 reps — very light','10 reps','8 reps'],
+     working:['8–12 reps','8–12 reps','8–12 reps']},
+    {name:'Lat pulldown machine',  muscle:'Lats / upper back',    note:'Grip slightly wider than shoulders. Pull bar to upper chest, lean back slightly.',
+     warmup:['12 reps — very light','10 reps','8 reps'],
+     working:['8–12 reps','8–12 reps','8–12 reps']},
+  ]},
+  fri:{label:'Friday — Mixed',focus:'Hips, chest, arms',exercises:[
+    {name:'Hip abductor machine',  muscle:'Outer glutes / hips', note:'Push knees outward slowly, controlled return. Back pain friendly.',
+     warmup:['12 reps — very light','10 reps','8 reps'],
+     working:['12–15 reps','12–15 reps','12–15 reps — slightly higher rep range for glutes']},
+    {name:'Chest fly machine',     muscle:'Chest / front shoulder',note:'Handles at shoulder level. Squeeze chest at centre, open wide on return.',
+     warmup:['12 reps — very light','10 reps','8 reps'],
+     working:['8–12 reps','8–12 reps','8–12 reps']},
+    {name:'Cable bicep / tricep',  muscle:'Biceps + triceps',    note:'Alternate: bicep curl with low cable, then tricep pushdown with high cable. 10 reps each = 1 set.',
+     warmup:['10+10 reps — very light','10+10 reps','10+10 reps'],
+     working:['10+10 reps','10+10 reps','10+10 reps']},
+  ]},
+};
+
+function gymSetKey(day,exIdx,setType,setIdx){return`wt_g_${day}_${exIdx}_${setType}_${setIdx}`}
+function isSetDone(day,exIdx,setType,setIdx){return localStorage.getItem(gymSetKey(day,exIdx,setType,setIdx))==='1'}
+function toggleSet(day,exIdx,setType,setIdx,el){
+  const key=gymSetKey(day,exIdx,setType,setIdx);
+  const done=localStorage.getItem(key)==='1';
+  localStorage.setItem(key,done?'0':'1');
+  el.classList.toggle('done-set',!done);
+}
+function showGymDay(day,btn){
+  document.querySelectorAll('.gtab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');renderGym(day);
+}
+function renderGym(day){
+  const data=GYM_DAYS[day];
+  const wrap=document.getElementById('gymContent');wrap.innerHTML='';
+  const info=document.createElement('div');
+  info.style.cssText='font-size:13px;color:var(--muted);padding:0 2px 12px;';
+  info.textContent='Focus: '+data.focus+' · 3 warm-up sets then 3 working sets per exercise';
+  wrap.appendChild(info);
+  data.exercises.forEach((ex,ei)=>{
+    const card=document.createElement('div');card.className='ex-card';
+    card.innerHTML=`<div class="ex-header"><div class="ex-num">${ei+1}</div><div><div class="ex-name">${ex.name}</div><div class="ex-muscle">${ex.muscle}</div></div></div>`;
+    const wuLabel=document.createElement('div');
+    wuLabel.style.cssText='font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);padding:9px 15px 5px;background:#fffdf8;border-bottom:1px solid var(--border)';
+    wuLabel.textContent='Warm-up sets';card.appendChild(wuLabel);
+    ex.warmup.forEach((s,si)=>{
+      const done=isSetDone(day,ei,'w',si);
+      const row=document.createElement('div');
+      row.className='set-row set-warmup'+(done?' done-set':'');
+      row.innerHTML=`<div class="set-cbox"><span class="set-tick">✓</span></div><div class="set-label">Set ${si+1}</div><div class="set-detail">${s}</div>`;
+      row.onclick=(()=>{const r=row,d=day,e=ei,i=si;return()=>toggleSet(d,e,'w',i,r);})();
+      card.appendChild(row);
+    });
+    const wsLabel=document.createElement('div');
+    wsLabel.style.cssText='font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--purple);padding:9px 15px 5px;background:#f9f8fe;border-top:1px solid var(--border);border-bottom:1px solid var(--border)';
+    wsLabel.textContent='Working sets';card.appendChild(wsLabel);
+    ex.working.forEach((s,si)=>{
+      const done=isSetDone(day,ei,'s',si);
+      const row=document.createElement('div');
+      row.className='set-row'+(done?' done-set':'');
+      row.innerHTML=`<div class="set-cbox"><span class="set-tick">✓</span></div><div class="set-label">Set ${si+1}</div><div class="set-detail">${s}</div>`;
+      row.onclick=(()=>{const r=row,d=day,e=ei,i=si;return()=>toggleSet(d,e,'s',i,r);})();
+      card.appendChild(row);
+    });
+    const note=document.createElement('div');note.className='gym-note';note.textContent='Form tip: '+ex.note;
+    card.appendChild(note);wrap.appendChild(card);
+  });
+  const rb=document.createElement('button');rb.className='reset-btn';rb.textContent='Reset this session';
+  rb.onclick=()=>{
+    if(!confirm('Reset all sets for this day?')) return;
+    data.exercises.forEach((ex,ei)=>{
+      ex.warmup.forEach((_,si)=>localStorage.removeItem(gymSetKey(day,ei,'w',si)));
+      ex.working.forEach((_,si)=>localStorage.removeItem(gymSetKey(day,ei,'s',si)));
+    });
+    renderGym(day);
+  };
+  wrap.appendChild(rb);
+}
+
+// ── NAV ───────────────────────────────────────────────
+function goPage(name,btn){
+  curPage=name;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='progress') buildProgress();
+}
+
+// ── INIT ──────────────────────────────────────────────
+(function(){
+  if(loadStart()){
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    selDay=todayOff();
+    updateHeader();buildWeekSections();buildChecklist(selDay);
+    showPortion('shake',document.querySelector('.ptab'));
+    renderGym('mon');
+  } else {
+    showSetupScreen();
+  }
+})();
+</script>
+</body>
+</html>
